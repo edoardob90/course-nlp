@@ -18,6 +18,7 @@ def get_wiki(path, lang, nproc=4):
         print("unzipping...")
         bunzip(path/zip_fn)
 
+def extract_wiki(path):
     with working_directory(path):
         if not (path/'wikiextractor').exists(): os.system('git clone https://github.com/attardi/wikiextractor.git')
         print("extracting...")
