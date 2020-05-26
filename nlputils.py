@@ -1,8 +1,9 @@
 from fastai.basics import *
 import re
+from subprocess import run
 
 
-def get_wiki(path,lang):
+def get_wiki(path, lang, nproc=4):
     name = f'{lang}wiki'
     if (path/name).exists():
         print(f"{path/name} already exists; not downloading")
@@ -20,13 +21,21 @@ def get_wiki(path,lang):
     with working_directory(path):
         if not (path/'wikiextractor').exists(): os.system('git clone https://github.com/attardi/wikiextractor.git')
         print("extracting...")
-        os.system("python wikiextractor/WikiExtractor.py --processes 4 --no_templates " +
-            f"--min_text_length 1800 --filter_disambig_pages --log_file log -b 100G -q {xml_fn}")
+        run(["/usr/bin/env", "python3", "wikiextractor/WikiExtractor.py --quiet",
+        "--processes {nproc}",
+        "--no_templates",
+        "--min_text_length 1800",
+        "--filter_disambig_pages",
+        "--log_file log",
+        "--bytes 100G {xml_fn}"], check=True)
+        #os.system("python3 wikiextractor/WikiExtractor.py --processes 4 --no_templates " +
+        #    f"--min_text_length 1800 --filter_disambig_pages --log_file log -b 100G -q {xml_fn}")
+    
     shutil.move(str(path/'text/AA/wiki_00'), str(path/name))
     shutil.rmtree(path/'text')
 
 
-def split_wiki(path,lang):
+def split_wiki(path, lang):
     dest = path/'docs'
     name = f'{lang}wiki'
     if dest.exists():
@@ -39,7 +48,7 @@ def split_wiki(path,lang):
     f=None
 
     for i,l in enumerate(lines):
-        if i%100000 == 0: print(i)
+        if i%100000 == 0: print(f"Processing Wiki entry #{i}")
         if l.startswith('<doc id="'):
             title = title_re.findall(l)[0].replace('/','_')
             if len(title)>150: continue
